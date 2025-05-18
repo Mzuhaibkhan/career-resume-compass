@@ -9,7 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Shield } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 // Define form schema
 const formSchema = z.object({
@@ -24,6 +25,7 @@ const Login = () => {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   // Initialize form
   const form = useForm<FormData>({
@@ -47,6 +49,12 @@ const Login = () => {
           name: 'Admin User',
         }));
         
+        login({
+          email: data.email,
+          role: 'admin',
+          name: 'Admin User',
+        });
+        
         toast({
           title: "Success",
           description: "You've successfully logged in as admin",
@@ -61,6 +69,12 @@ const Login = () => {
           role: 'user',
           name: 'Regular User',
         }));
+        
+        login({
+          email: data.email,
+          role: 'user',
+          name: 'Regular User',
+        });
         
         toast({
           title: "Success",
@@ -80,6 +94,11 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loginAsAdmin = () => {
+    form.setValue('email', 'admin@resumeai.com');
+    form.setValue('password', 'admin123');
   };
 
   return (
@@ -156,6 +175,27 @@ const Login = () => {
                     Sign In
                   </div>
                 )}
+              </Button>
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t"></span>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Or</span>
+                </div>
+              </div>
+              
+              <Button 
+                type="button"
+                variant="outline"
+                className="w-full" 
+                onClick={loginAsAdmin}
+              >
+                <div className="flex items-center justify-center">
+                  <Shield className="mr-2 h-4 w-4" />
+                  Login as Admin
+                </div>
               </Button>
             </form>
           </Form>
