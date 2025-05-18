@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,12 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Custom colors for our app
+				'resume-blue': '#4361EE',
+				'resume-purple': '#7209B7',
+				'resume-light-purple': '#B5B9FF',
+				'resume-gray': '#F8F9FA',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
