@@ -3,17 +3,32 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MenuIcon, XIcon } from 'lucide-react';
+import { MenuIcon, XIcon, LogIn, Lock } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const Navigation: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated, isAdmin, logout } = useAuth();
 
-  const navItems = [
-    { name: 'Dashboard', path: '/' },
-    { name: 'Upload Resume', path: '/upload' },
-    { name: 'Job Requirements', path: '/jobs' },
-    { name: 'Admin', path: '/admin' },
-  ];
+  const getNavItems = () => {
+    const items = [
+      { name: 'Dashboard', path: '/' },
+    ];
+
+    if (isAuthenticated) {
+      items.push({ name: 'Upload Resume', path: '/upload' });
+      
+      // Only show these links for admins
+      if (isAdmin) {
+        items.push({ name: 'Job Requirements', path: '/jobs' });
+        items.push({ name: 'Admin', path: '/admin' });
+      }
+    }
+
+    return items;
+  };
+
+  const navItems = getNavItems();
 
   const NavItem = ({ name, path }: { name: string; path: string }) => (
     <NavLink
@@ -45,6 +60,20 @@ const Navigation: React.FC = () => {
           {navItems.map((item) => (
             <NavItem key={item.name} name={item.name} path={item.path} />
           ))}
+          
+          {isAuthenticated ? (
+            <Button variant="outline" onClick={logout} className="ml-2">
+              <Lock className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          ) : (
+            <NavLink to="/login">
+              <Button variant="default" className="ml-2">
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign In
+              </Button>
+            </NavLink>
+          )}
         </nav>
         
         {/* Mobile Navigation Toggle */}
@@ -65,6 +94,20 @@ const Navigation: React.FC = () => {
             {navItems.map((item) => (
               <NavItem key={item.name} name={item.name} path={item.path} />
             ))}
+            
+            {isAuthenticated ? (
+              <Button variant="outline" onClick={logout} className="mt-2">
+                <Lock className="mr-2 h-4 w-4" />
+                Sign Out
+              </Button>
+            ) : (
+              <NavLink to="/login" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="default" className="mt-2 w-full">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign In
+                </Button>
+              </NavLink>
+            )}
           </div>
         </div>
       )}
