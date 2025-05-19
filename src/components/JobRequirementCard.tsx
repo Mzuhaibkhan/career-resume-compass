@@ -15,6 +15,7 @@ interface JobRequirementCardProps {
   isAdmin?: boolean;
   onEdit?: (job: JobRequirement) => void;
   onSelect?: (job: JobRequirement) => void;
+  isSelected?: boolean;
 }
 
 const formatSalary = (salary?: { min: number; max: number; currency: string }) => {
@@ -29,7 +30,13 @@ const formatSalary = (salary?: { min: number; max: number; currency: string }) =
   }
 };
 
-const JobRequirementCard: React.FC<JobRequirementCardProps> = ({ job, isAdmin = false, onEdit, onSelect }) => {
+const JobRequirementCard: React.FC<JobRequirementCardProps> = ({ 
+  job, 
+  isAdmin = false, 
+  onEdit, 
+  onSelect,
+  isSelected = false 
+}) => {
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const { toast } = useToast();
@@ -74,11 +81,19 @@ const JobRequirementCard: React.FC<JobRequirementCardProps> = ({ job, isAdmin = 
     }
   };
 
+  const handleCardClick = () => {
+    if (onSelect && !isAdmin) {
+      onSelect(job);
+    }
+  };
+
   return (
     <>
-      <Card className={`h-full flex flex-col ${selected ? 'border-primary border-2' : ''}`} 
-        onClick={onSelect && !isAdmin ? onSelect : undefined}
-        style={onSelect && !isAdmin ? { cursor: 'pointer' } : {}}>
+      <Card 
+        className={`h-full flex flex-col ${isSelected ? 'border-primary border-2' : ''}`} 
+        onClick={onSelect && !isAdmin ? handleCardClick : undefined}
+        style={onSelect && !isAdmin ? { cursor: 'pointer' } : {}}
+      >
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>

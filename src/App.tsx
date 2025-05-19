@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import Jobs from "./pages/Jobs";
 import Admin from "./pages/Admin";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -47,6 +48,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Layout><Upload /></Layout>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={
+                  <ProtectedRoute>
+                    <Layout><Profile /></Layout>
                   </ProtectedRoute>
                 } 
               />

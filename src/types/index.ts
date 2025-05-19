@@ -30,7 +30,7 @@ export interface JobRequirement {
   locationType?: 'remote' | 'on-site' | 'hybrid';
   experienceLevel?: 'entry' | 'mid' | 'senior' | 'lead';
   location?: string;
-  deadline?: string; // Added deadline field
+  deadline?: string;
 }
 
 export type UserRole = 'admin' | 'user';
@@ -40,6 +40,25 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  profilePhoto?: string;
+  linkedin?: string;
+  github?: string;
+  otherProfiles?: { [key: string]: string };
+  address?: string;
+  experienceLevel?: string;
+  skills?: Skill[];
+  education?: Education[];
+  extraActivities?: string[];
+  employmentStatus?: 'employed' | 'unemployed' | 'student';
+  currentEmployer?: string;
+}
+
+export interface Education {
+  degree: string;
+  institution: string;
+  graduationYear: number;
+  fieldOfStudy: string;
+  proofId?: string;
 }
 
 export interface JobFilters {
@@ -50,4 +69,15 @@ export interface JobFilters {
   employmentType?: string[];
   locationType?: string[];
   experienceLevel?: string[];
+}
+
+export interface JobApplication {
+  id: string;
+  jobId: string;
+  userId: string;
+  resumeId: string;
+  appliedDate: string;
+  status: 'applied' | 'reviewed' | 'rejected' | 'shortlisted' | 'hired';
+  feedback?: string;
+  interviewDate?: string;
 }

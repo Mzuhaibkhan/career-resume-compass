@@ -251,16 +251,16 @@ export const analyzeResumeWithJob = (resumeId: string, jobId: string): Promise<n
 };
 
 // New API function to simulate applying for a job
-export const applyForJob = (jobId: string, userId: string): Promise<{ success: boolean; message: string }> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Just simulate success for now
-      resolve({ 
-        success: true, 
-        message: "Application submitted successfully!"
-      });
-    }, 1000);
-  });
+export const applyForJob = async (jobId: string, userId: string, details?: { resumeId?: string, coverLetter?: string }) => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Return success response
+  return { 
+    success: true, 
+    message: 'Your application has been submitted successfully!',
+    applicationId: `app-${jobId}-${userId}-${Date.now()}`
+  };
 };
 
 // Filter jobs based on criteria
@@ -365,43 +365,89 @@ interface UserApplication {
   job: JobRequirement;
 }
 
-// Function to fetch user applications
-export const fetchUserApplications = async (userId: string): Promise<UserApplication[]> => {
-  await delay();
+// Function to fetch user resumes
+export const fetchUserResumes = async (userId: string) => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500));
   
-  // Generate some mock applications for the user
-  const mockApplications: UserApplication[] = [];
+  // Return mock resumes for the user
+  return [
+    {
+      id: 'resume-1',
+      name: 'Main Resume',
+      email: 'user@example.com',
+      filename: 'resume.pdf',
+      uploadDate: '2023-05-15',
+      skills: [
+        { name: 'React', category: 'Frontend', weight: 8 },
+        { name: 'Node.js', category: 'Backend', weight: 7 },
+        { name: 'TypeScript', category: 'Languages', weight: 9 }
+      ],
+      score: 85
+    },
+    {
+      id: 'resume-2',
+      name: 'Technical Resume',
+      email: 'user@example.com',
+      filename: 'technical_resume.pdf',
+      uploadDate: '2023-06-20',
+      skills: [
+        { name: 'Python', category: 'Languages', weight: 7 },
+        { name: 'Machine Learning', category: 'Data Science', weight: 6 },
+        { name: 'SQL', category: 'Database', weight: 8 }
+      ],
+      score: 72
+    }
+  ];
+};
+
+// Function to fetch user applications
+export const fetchUserApplications = async (userId: string) => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  // Get mock jobs to reference in applications
   const jobs = await fetchJobRequirements();
   
-  // Create 3 random applications with different statuses
-  const statuses: ('applied' | 'reviewed' | 'rejected' | 'shortlisted' | 'hired')[] = 
-    ['applied', 'reviewed', 'rejected', 'shortlisted', 'hired'];
-  
-  for (let i = 0; i < 3; i++) {
-    if (jobs[i]) {
-      mockApplications.push({
-        id: `app-${i}-${userId}`,
-        userId,
-        jobId: jobs[i].id,
-        resumeId: `resume-${i}`,
-        status: statuses[i % statuses.length],
-        appliedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-        job: jobs[i]
-      });
+  // Return mock applications for the user
+  return [
+    {
+      id: 'app-1',
+      jobId: jobs[0].id,
+      userId,
+      resumeId: 'resume-1',
+      appliedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'applied',
+      job: jobs[0]
+    },
+    {
+      id: 'app-2',
+      jobId: jobs[1].id,
+      userId,
+      resumeId: 'resume-1',
+      appliedDate: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'shortlisted',
+      job: jobs[1],
+      feedback: "Your skills match our requirements well. We'd like to schedule an interview."
     }
-  }
-  
-  return mockApplications;
+  ];
 };
 
 // Function to update application status (for admin use)
 export const updateApplicationStatus = async (
   applicationId: string, 
   newStatus: 'applied' | 'reviewed' | 'rejected' | 'shortlisted' | 'hired'
-): Promise<{ success: boolean }> => {
-  await delay();
-  console.log(`Updated application ${applicationId} status to ${newStatus}`);
-  return { success: true };
+) => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 600));
+  
+  // Return success response
+  return { 
+    success: true, 
+    message: `Application status updated to ${newStatus}`,
+    applicationId,
+    status: newStatus
+  };
 };
 
 const delay = () => new Promise(resolve => setTimeout(resolve, 500));
