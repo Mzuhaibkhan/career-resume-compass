@@ -1,30 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { fetchResumes, fetchJobRequirements, mockJobApplicants } from '@/services/mockData';
-import { Resume, JobRequirement } from '@/types';
-import { PlusIcon, TrashIcon, CalendarIcon, Clock, Users, Eye } from 'lucide-react';
-import { format } from 'date-fns';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
-import JobRequirementCard from '@/components/JobRequirementCard';
+import { fetchJobRequirements, updateApplicationStatus } from '@/services/mockData';
+import { JobRequirement } from '@/types';
 import JobDetailsDialog from '@/components/JobDetailsDialog';
 
 interface JobApplicant {
@@ -41,57 +22,55 @@ interface JobApplicant {
   };
 }
 
-const Admin: React.FC = () => {
-  const [resumes, setResumes] = useState<Resume[]>([]);
+const Admin = () => {
   const [jobs, setJobs] = useState<JobRequirement[]>([]);
-  const [applicants, setApplicants] = useState<JobApplicant[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const [selectedJob, setSelectedJob] = useState<JobRequirement | null>(null);
-  const [showJobDetails, setShowJobDetails] = useState<boolean>(false);
+  const [showJobDetails, setShowJobDetails] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  
-  // API settings
-  const [apiEnabled, setApiEnabled] = useState<boolean>(true);
-  const [apiKey, setApiKey] = useState<string>('sk_live_example123456789');
-  
-  // Custom categories
-  const [categories, setCategories] = useState<string[]>(['Technical', 'Soft Skills', 'Languages', 'Tools']);
-  const [newCategory, setNewCategory] = useState<string>('');
 
-  // Skills settings
-  const [skillWeights, setSkillWeights] = useState<{[key: string]: number}>({
-    'Technical': 5,
-    'Soft Skills': 3,
-    'Languages': 4,
-    'Tools': 3
-  });
-
-  // Job deadline state
-  const [jobDeadlines, setJobDeadlines] = useState<{[key: string]: Date | undefined}>({});
+  // Mock applicants data
+  const [applicants, setApplicants] = useState<JobApplicant[]>([]);
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadJobs = async () => {
+      setLoading(true);
       try {
-        const resumesData = await fetchResumes();
         const jobsData = await fetchJobRequirements();
-        const applicantsData = await mockJobApplicants();
-        
-        setResumes(resumesData);
         setJobs(jobsData);
-        setApplicants(applicantsData);
-
-        // Initialize job deadlines
-        const deadlines: {[key: string]: Date | undefined} = {};
-        jobsData.forEach(job => {
-          // Set deadline 30 days from creation date if not already set
-          deadlines[job.id] = job.deadline ? new Date(job.deadline) : undefined;
+        
+        // Generate mock applicants for the jobs
+        const mockApplicants: JobApplicant[] = [];
+        const statuses: ('applied' | 'reviewed' | 'rejected' | 'shortlisted' | 'hired')[] = 
+          ['applied', 'reviewed', 'applied', 'applied', 'reviewed'];
+        
+        jobsData.forEach((job, jobIndex) => {
+          // Add 2-4 applicants per job
+          const numApplicants = Math.floor(Math.random() * 3) + 2;
+          
+          for (let i = 0; i < numApplicants; i++) {
+            mockApplicants.push({
+              id: `app-${jobIndex}-${i}`,
+              jobId: job.id,
+              resumeId: `resume-${i}`,
+              status: statuses[Math.floor(Math.random() * statuses.length)],
+              appliedDate: new Date(Date.now() - Math.random() * 14 * 24 * 60 * 60 * 1000).toISOString(),
+              resume: {
+                name: `Applicant ${i + 1} for ${job.title}`,
+                email: `applicant${i}@example.com`,
+                skills: job.requiredSkills.slice(0, Math.floor(Math.random() * job.requiredSkills.length) + 1),
+                score: Math.floor(Math.random() * 40) + 60
+              }
+            });
+          }
         });
-        setJobDeadlines(deadlines);
+        
+        setApplicants(mockApplicants);
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error loading jobs:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load data',
+          description: 'Failed to load job data',
           variant: 'destructive',
         });
       } finally {
@@ -99,448 +78,203 @@ const Admin: React.FC = () => {
       }
     };
 
-    loadData();
+    loadJobs();
   }, [toast]);
 
-  const handleGenerateNewApiKey = () => {
-    // In a real app, this would call an API to generate a new key
-    const newKey = 'sk_live_' + Math.random().toString(36).substring(2, 15);
-    setApiKey(newKey);
-    toast({
-      title: 'Success',
-      description: 'New API key has been generated',
-    });
-  };
-
-  const handleAddCategory = () => {
-    if (newCategory && !categories.includes(newCategory)) {
-      setCategories([...categories, newCategory]);
-      setSkillWeights({
-        ...skillWeights,
-        [newCategory]: 3 // Default weight
-      });
-      setNewCategory('');
-      toast({
-        title: 'Category Added',
-        description: `Category "${newCategory}" has been added`,
-      });
-    }
-  };
-
-  const handleDeleteCategory = (category: string) => {
-    setCategories(categories.filter(c => c !== category));
-    const newWeights = { ...skillWeights };
-    delete newWeights[category];
-    setSkillWeights(newWeights);
-    toast({
-      title: 'Category Deleted',
-      description: `Category "${category}" has been removed`,
-    });
-  };
-
-  const handleWeightChange = (category: string, weight: string) => {
-    const numWeight = parseInt(weight);
-    if (!isNaN(numWeight) && numWeight >= 1 && numWeight <= 5) {
-      setSkillWeights({
-        ...skillWeights,
-        [category]: numWeight
-      });
-    }
-  };
-
-  const handleSaveSettings = () => {
-    toast({
-      title: 'Settings Saved',
-      description: 'Your settings have been successfully saved',
-    });
-  };
-
-  const handleDeleteResume = (id: string) => {
-    setResumes(resumes.filter(r => r.id !== id));
-    toast({
-      title: 'Resume Deleted',
-      description: 'Resume has been removed from the system',
-    });
-  };
-
-  const handleDeadlineChange = (jobId: string, date: Date | undefined) => {
-    setJobDeadlines({
-      ...jobDeadlines,
-      [jobId]: date
-    });
-    
-    toast({
-      title: 'Deadline Updated',
-      description: date ? `Job deadline set to ${format(date, 'MMM d, yyyy')}` : 'Job deadline removed',
-    });
-  };
-
-  const getApplicantCountForJob = (jobId: string) => {
-    return applicants.filter(a => a.jobId === jobId).length;
-  };
-
-  const getApplicantsForJob = (jobId: string) => {
-    return applicants.filter(a => a.jobId === jobId);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'applied': return 'bg-blue-100 text-blue-800';
-      case 'reviewed': return 'bg-yellow-100 text-yellow-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'shortlisted': return 'bg-green-100 text-green-800';
-      case 'hired': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const viewJobDetails = (job: JobRequirement) => {
+  const handleViewJobDetails = (job: JobRequirement) => {
     setSelectedJob(job);
     setShowJobDetails(true);
+  };
+  
+  const handleUpdateStatus = async (applicationId: string, newStatus: 'applied' | 'reviewed' | 'rejected' | 'shortlisted' | 'hired') => {
+    try {
+      await updateApplicationStatus(applicationId, newStatus);
+      
+      // Update local state
+      setApplicants(prevApplicants => 
+        prevApplicants.map(app => 
+          app.id === applicationId ? { ...app, status: newStatus } : app
+        )
+      );
+      
+      toast({
+        title: 'Status Updated',
+        description: `Applicant status changed to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update applicant status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const getJobApplicants = (jobId: string) => {
+    return applicants.filter(app => app.jobId === jobId);
   };
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground">
-          Manage the resume skills extractor system
+          Manage job postings and applicants
         </p>
       </div>
-      
-      <Tabs defaultValue="jobs">
-        <TabsList className="w-full md:w-auto">
-          <TabsTrigger value="jobs">Manage Jobs</TabsTrigger>
-          <TabsTrigger value="settings">System Settings</TabsTrigger>
-          <TabsTrigger value="resumes">Manage Resumes</TabsTrigger>
-          <TabsTrigger value="api">API Settings</TabsTrigger>
-        </TabsList>
-        
-        {/* Jobs Tab */}
-        <TabsContent value="jobs" className="mt-6 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex justify-between items-center">
-                <span>Posted Jobs</span>
-                <Button size="sm">
-                  <PlusIcon className="h-4 w-4 mr-1" /> New Job
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Job Title</TableHead>
-                      <TableHead>Posted Date</TableHead>
-                      <TableHead>Applicants</TableHead>
-                      <TableHead>Deadline</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {jobs.map(job => (
-                      <TableRow key={job.id}>
-                        <TableCell className="font-medium">{job.title}</TableCell>
-                        <TableCell>{format(new Date(job.createdAt), 'MMM d, yyyy')}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <Users className="h-4 w-4 mr-1" />
-                            <span>{getApplicantCountForJob(job.id)}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" size="sm" className="flex items-center gap-1 h-8">
-                                <Clock className="h-4 w-4" />
-                                {jobDeadlines[job.id] ? 
-                                  format(jobDeadlines[job.id] as Date, 'MMM d, yyyy') : 
-                                  'Set Deadline'}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={jobDeadlines[job.id]}
-                                onSelect={(date) => handleDeadlineChange(job.id, date)}
-                                initialFocus
-                                disabled={(date) => 
-                                  date < new Date() || 
-                                  date > new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                                }
-                                className={cn("p-3 pointer-events-auto")}
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </TableCell>
-                        <TableCell>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => viewJobDetails(job)} 
-                            className="flex items-center gap-1"
-                          >
-                            <Eye className="h-4 w-4" />
-                            View Details
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {jobs.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-10">
-                          No jobs posted yet
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
 
-          {selectedJob && (
-            <JobDetailsDialog
-              isOpen={showJobDetails}
-              onClose={() => setShowJobDetails(false)}
-              job={selectedJob}
-              applicants={getApplicantsForJob(selectedJob.id)}
-            />
-          )}
-        </TabsContent>
-        
-        <TabsContent value="settings" className="space-y-6 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Skill Categories & Weights</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                {categories.map((category) => (
-                  <div key={category} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <span className="mr-4">{category}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor={`weight-${category}`}>Weight:</Label>
-                        <Input
-                          id={`weight-${category}`}
-                          type="number"
-                          min="1"
-                          max="5"
-                          className="w-16"
-                          value={skillWeights[category] || 3}
-                          onChange={(e) => handleWeightChange(category, e.target.value)}
-                        />
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleDeleteCategory(category)}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <Separator />
-              
-              <div className="flex gap-2">
-                <Input
-                  placeholder="New category name"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="flex-grow"
-                />
-                <Button onClick={handleAddCategory} disabled={!newCategory.trim()}>
-                  <PlusIcon className="h-4 w-4 mr-2" /> Add Category
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Analysis Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="auto-analyze">Auto-analyze on upload</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Automatically analyze resumes against all job requirements when uploaded
-                  </p>
-                </div>
-                <Switch id="auto-analyze" />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="notify-email">Email notifications</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Send email notifications for new resume uploads
-                  </p>
-                </div>
-                <Switch id="notify-email" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <div className="flex justify-end">
-            <Button onClick={handleSaveSettings}>Save Settings</Button>
+      <Tabs defaultValue="manage-jobs">
+        <TabsList className="mb-4">
+          <TabsTrigger value="manage-jobs">Manage Jobs</TabsTrigger>
+          <TabsTrigger value="applicants">All Applicants</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
+
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
-        </TabsContent>
-        
-        <TabsContent value="resumes" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Stored Resumes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="text-left border-b">
-                        <th className="px-4 py-2">Name</th>
-                        <th className="px-4 py-2">Email</th>
-                        <th className="px-4 py-2">Skills</th>
-                        <th className="px-4 py-2">Score</th>
-                        <th className="px-4 py-2">Uploaded</th>
-                        <th className="px-4 py-2">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {resumes.map((resume) => (
-                        <tr key={resume.id} className="border-b hover:bg-muted/50">
-                          <td className="px-4 py-3">{resume.name}</td>
-                          <td className="px-4 py-3">{resume.email}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex flex-wrap gap-1">
-                              {resume.skills.slice(0, 2).map((skill) => (
-                                <Badge key={skill.name} variant="outline" className="text-xs">
-                                  {skill.name}
-                                </Badge>
-                              ))}
-                              {resume.skills.length > 2 && (
-                                <span className="text-xs text-muted-foreground">
-                                  +{resume.skills.length - 2} more
-                                </span>
+        ) : (
+          <>
+            <TabsContent value="manage-jobs" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {jobs.map((job) => {
+                  const jobApplicants = getJobApplicants(job.id);
+                  return (
+                    <Card key={job.id}>
+                      <CardContent className="p-6">
+                        <h3 className="text-xl font-medium mb-2">{job.title}</h3>
+                        <div className="mb-4 text-sm text-muted-foreground">
+                          <p>{job.employmentType} · {job.locationType}</p>
+                          {job.deadline && (
+                            <p>Deadline: {new Date(job.deadline).toLocaleDateString()}</p>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <p className="font-semibold">Applicants: {jobApplicants.length}</p>
+                            <div className="mt-1 text-sm">
+                              <p>
+                                <span className="text-green-600 font-medium">{jobApplicants.filter(a => a.status === 'shortlisted').length}</span> shortlisted
+                              </p>
+                              <p>
+                                <span className="text-yellow-600 font-medium">{jobApplicants.filter(a => a.status === 'applied' || a.status === 'reviewed').length}</span> pending review
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <Button className="w-full" onClick={() => handleViewJobDetails(job)}>
+                            View Details & Manage
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="applicants" className="space-y-6">
+              <div className="rounded-md border">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="p-3 text-left">Applicant</th>
+                      <th className="p-3 text-left">Job Position</th>
+                      <th className="p-3 text-left">Applied Date</th>
+                      <th className="p-3 text-left">Status</th>
+                      <th className="p-3 text-left">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {applicants.map((applicant) => {
+                      const job = jobs.find(j => j.id === applicant.jobId);
+                      return (
+                        <tr key={applicant.id} className="border-t">
+                          <td className="p-3">
+                            <div>
+                              <p className="font-medium">{applicant.resume.name}</p>
+                              <p className="text-xs text-muted-foreground">{applicant.resume.email}</p>
+                            </div>
+                          </td>
+                          <td className="p-3">{job?.title || 'Unknown Position'}</td>
+                          <td className="p-3">{new Date(applicant.appliedDate).toLocaleDateString()}</td>
+                          <td className="p-3">
+                            <span className={`text-xs rounded-full px-2 py-1 font-medium ${
+                              applicant.status === 'shortlisted' ? 'bg-green-100 text-green-800' :
+                              applicant.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                              applicant.status === 'hired' ? 'bg-purple-100 text-purple-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1)}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex space-x-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleViewJobDetails(job!)}
+                              >
+                                View
+                              </Button>
+                              {applicant.status !== 'shortlisted' && (
+                                <Button 
+                                  size="sm" 
+                                  variant="default"
+                                  className="bg-green-600 hover:bg-green-700"
+                                  onClick={() => handleUpdateStatus(applicant.id, 'shortlisted')}
+                                >
+                                  Shortlist
+                                </Button>
+                              )}
+                              {applicant.status !== 'rejected' && (
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive"
+                                  onClick={() => handleUpdateStatus(applicant.id, 'rejected')}
+                                >
+                                  Reject
+                                </Button>
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3">
-                            {resume.score ? `${resume.score}%` : 'Not analyzed'}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">
-                            {new Date(resume.uploadDate).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteResume(resume.id)}
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </Button>
-                          </td>
                         </tr>
-                      ))}
-
-                      {resumes.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="px-4 py-8 text-center">
-                            No resumes have been uploaded yet
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="api" className="space-y-6 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>API Configuration</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="api-enabled">API Access</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Enable or disable API access for external applications
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="settings">
+              <Card>
+                <CardContent className="p-6">
+                  <h2 className="text-xl font-medium mb-4">Admin Settings</h2>
+                  <p className="text-muted-foreground">
+                    Configure system settings, notification preferences, and user permissions.
                   </p>
-                </div>
-                <Switch 
-                  id="api-enabled" 
-                  checked={apiEnabled}
-                  onCheckedChange={setApiEnabled}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="api-key">API Key</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="api-key"
-                    type="text"
-                    readOnly
-                    value={apiKey}
-                    className="font-mono flex-grow"
-                  />
-                  <Button onClick={handleGenerateNewApiKey}>
-                    Regenerate
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  This key provides full access to the Resume API. Keep it secure.
-                </p>
-              </div>
-              
-              <div className="pt-4">
-                <h3 className="text-lg font-semibold mb-2">API Documentation</h3>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium">Upload Resume</h4>
-                    <pre className="bg-muted p-4 rounded-md text-sm mt-2 overflow-x-auto">
-                      POST /api/resumes<br />
-                      Content-Type: multipart/form-data<br />
-                      Authorization: Bearer {'{your-api-key}'}
-                    </pre>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium">Analyze Resume</h4>
-                    <pre className="bg-muted p-4 rounded-md text-sm mt-2 overflow-x-auto">
-                      POST /api/resumes/{'{resume-id}'}/analyze<br />
-                      Content-Type: application/json<br />
-                      Authorization: Bearer {'{your-api-key}'}<br /><br />
-                      {JSON.stringify({ jobId: "job-id-here" }, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </>
+        )}
       </Tabs>
+      
+      {selectedJob && (
+        <JobDetailsDialog
+          isOpen={showJobDetails}
+          onClose={() => setShowJobDetails(false)}
+          job={selectedJob}
+          applicants={getJobApplicants(selectedJob.id).map(app => ({
+            ...app,
+            onStatusChange: (newStatus: 'applied' | 'reviewed' | 'rejected' | 'shortlisted' | 'hired') => 
+              handleUpdateStatus(app.id, newStatus)
+          }))}
+        />
+      )}
     </div>
   );
 };

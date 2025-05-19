@@ -7,6 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { JobRequirement } from '@/types';
 import { format } from 'date-fns';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Table,
   TableBody,
   TableCell,
@@ -14,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Briefcase, DollarSign, MapPin, Cloud, Calendar, Users } from 'lucide-react';
+import { Briefcase, DollarSign, MapPin, Cloud, Calendar, Users, ChevronDown } from 'lucide-react';
 
 interface JobApplicant {
   id: string;
@@ -28,6 +34,7 @@ interface JobApplicant {
     skills: { name: string; category: string }[];
     score?: number;
   };
+  onStatusChange?: (status: 'applied' | 'reviewed' | 'rejected' | 'shortlisted' | 'hired') => void;
 }
 
 interface JobDetailsDialogProps {
@@ -68,6 +75,9 @@ const JobDetailsDialog: React.FC<JobDetailsDialogProps> = ({ isOpen, onClose, jo
           <DialogTitle className="text-xl">{job.title}</DialogTitle>
           <DialogDescription>
             Posted on {format(new Date(job.createdAt), 'MMMM d, yyyy')}
+            {job.deadline && (
+              <> · Deadline: {format(new Date(job.deadline), 'MMMM d, yyyy')}</>
+            )}
           </DialogDescription>
         </DialogHeader>
         
@@ -132,7 +142,6 @@ const JobDetailsDialog: React.FC<JobDetailsDialogProps> = ({ isOpen, onClose, jo
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Applied Date</TableHead>
-                    <TableHead>Skills Match</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -144,23 +153,38 @@ const JobDetailsDialog: React.FC<JobDetailsDialogProps> = ({ isOpen, onClose, jo
                       <TableCell>{applicant.resume.email}</TableCell>
                       <TableCell>{format(new Date(applicant.appliedDate), 'MMM d, yyyy')}</TableCell>
                       <TableCell>
-                        {applicant.resume.score ? (
-                          <span className={`text-sm ${applicant.resume.score >= 70 ? 'text-green-600' : applicant.resume.score >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
-                            {applicant.resume.score}%
-                          </span>
-                        ) : (
-                          'Not analyzed'
-                        )}
-                      </TableCell>
-                      <TableCell>
                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusColor(applicant.status)}`}>
                           {applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1)}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Button variant="outline" size="sm">
-                          Review
-                        </Button>
+                        {applicant.onStatusChange ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                Update Status <ChevronDown className="ml-1 h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem onClick={() => applicant.onStatusChange!('reviewed')}>
+                                Mark as Reviewed
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => applicant.onStatusChange!('shortlisted')}>
+                                Shortlist Candidate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => applicant.onStatusChange!('rejected')}>
+                                Reject Application
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => applicant.onStatusChange!('hired')}>
+                                Mark as Hired
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : (
+                          <Button variant="outline" size="sm">
+                            View Resume
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

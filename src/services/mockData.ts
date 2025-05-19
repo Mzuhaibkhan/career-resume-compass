@@ -354,3 +354,54 @@ export const mockJobApplicants = async () => {
   
   return applicants;
 };
+
+interface UserApplication {
+  id: string;
+  userId: string;
+  jobId: string;
+  resumeId: string;
+  status: 'applied' | 'reviewed' | 'rejected' | 'shortlisted' | 'hired';
+  appliedDate: string;
+  job: JobRequirement;
+}
+
+// Function to fetch user applications
+export const fetchUserApplications = async (userId: string): Promise<UserApplication[]> => {
+  await delay();
+  
+  // Generate some mock applications for the user
+  const mockApplications: UserApplication[] = [];
+  const jobs = await fetchJobRequirements();
+  
+  // Create 3 random applications with different statuses
+  const statuses: ('applied' | 'reviewed' | 'rejected' | 'shortlisted' | 'hired')[] = 
+    ['applied', 'reviewed', 'rejected', 'shortlisted', 'hired'];
+  
+  for (let i = 0; i < 3; i++) {
+    if (jobs[i]) {
+      mockApplications.push({
+        id: `app-${i}-${userId}`,
+        userId,
+        jobId: jobs[i].id,
+        resumeId: `resume-${i}`,
+        status: statuses[i % statuses.length],
+        appliedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+        job: jobs[i]
+      });
+    }
+  }
+  
+  return mockApplications;
+};
+
+// Function to update application status (for admin use)
+export const updateApplicationStatus = async (
+  applicationId: string, 
+  newStatus: 'applied' | 'reviewed' | 'rejected' | 'shortlisted' | 'hired'
+): Promise<{ success: boolean }> => {
+  await delay();
+  console.log(`Updated application ${applicationId} status to ${newStatus}`);
+  return { success: true };
+};
+
+const delay = () => new Promise(resolve => setTimeout(resolve, 500));

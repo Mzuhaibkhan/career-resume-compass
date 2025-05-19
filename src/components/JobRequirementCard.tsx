@@ -13,8 +13,8 @@ import { useAuth } from '@/context/AuthContext';
 interface JobRequirementCardProps {
   job: JobRequirement;
   isAdmin?: boolean;
-  selected?: boolean;
-  onSelect?: () => void;
+  onEdit?: (job: JobRequirement) => void;
+  onSelect?: (job: JobRequirement) => void;
 }
 
 const formatSalary = (salary?: { min: number; max: number; currency: string }) => {
@@ -29,7 +29,7 @@ const formatSalary = (salary?: { min: number; max: number; currency: string }) =
   }
 };
 
-const JobRequirementCard: React.FC<JobRequirementCardProps> = ({ job, isAdmin = false, selected = false, onSelect }) => {
+const JobRequirementCard: React.FC<JobRequirementCardProps> = ({ job, isAdmin = false, onEdit, onSelect }) => {
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const { toast } = useToast();
