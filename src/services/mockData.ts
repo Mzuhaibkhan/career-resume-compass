@@ -1,4 +1,4 @@
-import { Resume, Skill, JobRequirement } from "../types";
+import { Resume, Skill, JobRequirement, JobFilters } from "../types";
 
 export const mockSkills: Skill[] = [
   { name: "React", category: "Frontend", weight: 5 },

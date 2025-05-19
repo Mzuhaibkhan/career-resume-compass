@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
@@ -14,68 +14,69 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import React from "react";
 
-const queryClient = new QueryClient();
+// Create App component to properly handle React hooks
+const App = () => {
+  // Move QueryClient initialization inside the component
+  const [queryClient] = React.useState(() => new QueryClient());
 
-const AppRoutes = () => (
-  <Routes>
-    {/* Public Routes */}
-    <Route path="/login" element={<Login />} />
-    <Route path="/signup" element={<Signup />} />
-    
-    {/* Protected Routes */}
-    <Route 
-      path="/" 
-      element={
-        <ProtectedRoute>
-          <Layout><Dashboard /></Layout>
-        </ProtectedRoute>
-      } 
-    />
-    <Route 
-      path="/upload" 
-      element={
-        <ProtectedRoute>
-          <Layout><Upload /></Layout>
-        </ProtectedRoute>
-      } 
-    />
-    
-    {/* Admin-Only Routes */}
-    <Route 
-      path="/jobs" 
-      element={
-        <ProtectedRoute requireAdmin={true}>
-          <Layout><Jobs /></Layout>
-        </ProtectedRoute>
-      } 
-    />
-    <Route 
-      path="/admin" 
-      element={
-        <ProtectedRoute requireAdmin={true}>
-          <Layout><Admin /></Layout>
-        </ProtectedRoute>
-      } 
-    />
-    
-    {/* Not Found Route */}
-    <Route path="*" element={<NotFound />} />
-  </Routes>
-);
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              
+              {/* Protected Routes */}
+              <Route 
+                path="/" 
+                element={
+                  <ProtectedRoute>
+                    <Layout><Dashboard /></Layout>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/upload" 
+                element={
+                  <ProtectedRoute>
+                    <Layout><Upload /></Layout>
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Admin-Only Routes */}
+              <Route 
+                path="/jobs" 
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <Layout><Jobs /></Layout>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <Layout><Admin /></Layout>
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Not Found Route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

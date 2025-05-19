@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { JobRequirement } from '@/types';
@@ -14,6 +13,8 @@ import { useAuth } from '@/context/AuthContext';
 interface JobRequirementCardProps {
   job: JobRequirement;
   isAdmin?: boolean;
+  selected?: boolean;
+  onSelect?: () => void;
 }
 
 const formatSalary = (salary?: { min: number; max: number; currency: string }) => {
@@ -28,7 +29,7 @@ const formatSalary = (salary?: { min: number; max: number; currency: string }) =
   }
 };
 
-const JobRequirementCard: React.FC<JobRequirementCardProps> = ({ job, isAdmin = false }) => {
+const JobRequirementCard: React.FC<JobRequirementCardProps> = ({ job, isAdmin = false, selected = false, onSelect }) => {
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const { toast } = useToast();
@@ -75,7 +76,9 @@ const JobRequirementCard: React.FC<JobRequirementCardProps> = ({ job, isAdmin = 
 
   return (
     <>
-      <Card className="h-full flex flex-col">
+      <Card className={`h-full flex flex-col ${selected ? 'border-primary border-2' : ''}`} 
+        onClick={onSelect && !isAdmin ? onSelect : undefined}
+        style={onSelect && !isAdmin ? { cursor: 'pointer' } : {}}>
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
