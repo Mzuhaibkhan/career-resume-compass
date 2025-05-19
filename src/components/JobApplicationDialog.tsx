@@ -84,10 +84,19 @@ const JobApplicationDialog: React.FC<JobApplicationDialogProps> = ({ job, open, 
       return;
     }
 
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You need to be logged in to apply",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
-      const result = await applyForJob(job.id, user?.id || '', {
+      const result = await applyForJob(job.id, user.id, {
         resumeId: selectedResume,
         coverLetter: coverLetter
       });
@@ -207,9 +216,11 @@ const JobApplicationDialog: React.FC<JobApplicationDialogProps> = ({ job, open, 
               ) : (
                 <div className="text-center p-4 border border-dashed rounded-md">
                   <p className="text-muted-foreground mb-2">No resumes found</p>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Upload className="h-4 w-4" />
-                    Upload Resume
+                  <Button variant="outline" asChild className="flex items-center gap-2">
+                    <Link to="/upload">
+                      <Upload className="h-4 w-4" />
+                      Upload Resume
+                    </Link>
                   </Button>
                 </div>
               )}

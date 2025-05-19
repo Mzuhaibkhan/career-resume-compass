@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import FileUpload from '@/components/FileUpload';
 import ResumeCard from '@/components/ResumeCard';
@@ -15,6 +14,7 @@ const Upload: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showJobDialog, setShowJobDialog] = useState<boolean>(false);
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState<boolean>(false);
   const { toast } = useToast();
 
@@ -63,6 +63,7 @@ const Upload: React.FC = () => {
 
   const handleJobSelect = (jobId: string) => {
     setSelectedJob(jobId === selectedJob ? null : jobId);
+    setSelectedJobId(jobId);
   };
 
   const handleAnalyze = async () => {
@@ -145,10 +146,10 @@ const Upload: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-1">
               {jobs.map((job) => (
                 <JobRequirementCard
-                  key={job.id}
-                  job={job}
-                  onSelect={() => handleJobSelect(job.id)}
-                  selected={selectedJob === job.id}
+                  key={job.id} 
+                  job={job} 
+                  onSelect={() => handleJobSelect(job.id)} 
+                  isSelected={selectedJobId === job.id} 
                 />
               ))}
               
