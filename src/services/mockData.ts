@@ -307,3 +307,50 @@ export const getSkillCategories = (): string[] => {
 export const getSkillsByCategory = (category: string): Skill[] => {
   return mockSkills.filter(skill => skill.category === category);
 };
+
+// Add this new mock function for job applicants
+export const mockJobApplicants = async () => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  const resumes = await fetchResumes();
+  const jobs = await fetchJobRequirements();
+  
+  // Generate random applicants for jobs
+  const applicants = [];
+  
+  const statuses = ['applied', 'reviewed', 'rejected', 'shortlisted', 'hired'];
+  
+  for (const job of jobs) {
+    // Random number of applicants per job (0-5)
+    const applicantCount = Math.floor(Math.random() * 6);
+    
+    for (let i = 0; i < applicantCount; i++) {
+      // Pick a random resume
+      const resume = resumes[Math.floor(Math.random() * resumes.length)];
+      
+      // Random application date between job posting and now
+      const jobDate = new Date(job.createdAt);
+      const now = new Date();
+      const randomDate = new Date(jobDate.getTime() + Math.random() * (now.getTime() - jobDate.getTime()));
+      
+      // Random status
+      const status = statuses[Math.floor(Math.random() * statuses.length)] as 'applied' | 'reviewed' | 'rejected' | 'shortlisted' | 'hired';
+      
+      applicants.push({
+        id: `app-${job.id}-${resume.id}`,
+        jobId: job.id,
+        resumeId: resume.id,
+        status,
+        appliedDate: randomDate.toISOString(),
+        resume: {
+          name: resume.name,
+          email: resume.email,
+          skills: resume.skills,
+          score: Math.floor(Math.random() * 101) // Random score 0-100
+        }
+      });
+    }
+  }
+  
+  return applicants;
+};

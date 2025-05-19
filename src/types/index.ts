@@ -30,6 +30,7 @@ export interface JobRequirement {
   locationType?: 'remote' | 'on-site' | 'hybrid';
   experienceLevel?: 'entry' | 'mid' | 'senior' | 'lead';
   location?: string;
+  deadline?: string; // Added deadline field
 }
 
 export type UserRole = 'admin' | 'user';

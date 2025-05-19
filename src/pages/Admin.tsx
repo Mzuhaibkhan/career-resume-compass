@@ -9,13 +9,45 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { fetchResumes } from '@/services/mockData';
-import { Resume } from '@/types';
-import { PlusIcon, TrashIcon } from 'lucide-react';
+import { fetchResumes, fetchJobRequirements, mockJobApplicants } from '@/services/mockData';
+import { Resume, JobRequirement } from '@/types';
+import { PlusIcon, TrashIcon, CalendarIcon, Clock, Users, Eye } from 'lucide-react';
+import { format } from 'date-fns';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import JobRequirementCard from '@/components/JobRequirementCard';
+import JobDetailsDialog from '@/components/JobDetailsDialog';
+
+interface JobApplicant {
+  id: string;
+  jobId: string;
+  resumeId: string;
+  status: 'applied' | 'reviewed' | 'rejected' | 'shortlisted' | 'hired';
+  appliedDate: string;
+  resume: {
+    name: string;
+    email: string;
+    skills: { name: string; category: string }[];
+    score?: number;
+  };
+}
 
 const Admin: React.FC = () => {
   const [resumes, setResumes] = useState<Resume[]>([]);
+  const [jobs, setJobs] = useState<JobRequirement[]>([]);
+  const [applicants, setApplicants] = useState<JobApplicant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [selectedJob, setSelectedJob] = useState<JobRequirement | null>(null);
+  const [showJobDetails, setShowJobDetails] = useState<boolean>(false);
   const { toast } = useToast();
   
   // API settings
@@ -34,16 +66,32 @@ const Admin: React.FC = () => {
     'Tools': 3
   });
 
+  // Job deadline state
+  const [jobDeadlines, setJobDeadlines] = useState<{[key: string]: Date | undefined}>({});
+
   useEffect(() => {
     const loadData = async () => {
       try {
         const resumesData = await fetchResumes();
+        const jobsData = await fetchJobRequirements();
+        const applicantsData = await mockJobApplicants();
+        
         setResumes(resumesData);
+        setJobs(jobsData);
+        setApplicants(applicantsData);
+
+        // Initialize job deadlines
+        const deadlines: {[key: string]: Date | undefined} = {};
+        jobsData.forEach(job => {
+          // Set deadline 30 days from creation date if not already set
+          deadlines[job.id] = job.deadline ? new Date(job.deadline) : undefined;
+        });
+        setJobDeadlines(deadlines);
       } catch (error) {
-        console.error('Error loading resumes:', error);
+        console.error('Error loading data:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load resumes',
+          description: 'Failed to load data',
           variant: 'destructive',
         });
       } finally {
@@ -115,6 +163,42 @@ const Admin: React.FC = () => {
     });
   };
 
+  const handleDeadlineChange = (jobId: string, date: Date | undefined) => {
+    setJobDeadlines({
+      ...jobDeadlines,
+      [jobId]: date
+    });
+    
+    toast({
+      title: 'Deadline Updated',
+      description: date ? `Job deadline set to ${format(date, 'MMM d, yyyy')}` : 'Job deadline removed',
+    });
+  };
+
+  const getApplicantCountForJob = (jobId: string) => {
+    return applicants.filter(a => a.jobId === jobId).length;
+  };
+
+  const getApplicantsForJob = (jobId: string) => {
+    return applicants.filter(a => a.jobId === jobId);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'applied': return 'bg-blue-100 text-blue-800';
+      case 'reviewed': return 'bg-yellow-100 text-yellow-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'shortlisted': return 'bg-green-100 text-green-800';
+      case 'hired': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const viewJobDetails = (job: JobRequirement) => {
+    setSelectedJob(job);
+    setShowJobDetails(true);
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -124,12 +208,112 @@ const Admin: React.FC = () => {
         </p>
       </div>
       
-      <Tabs defaultValue="settings">
+      <Tabs defaultValue="jobs">
         <TabsList className="w-full md:w-auto">
+          <TabsTrigger value="jobs">Manage Jobs</TabsTrigger>
           <TabsTrigger value="settings">System Settings</TabsTrigger>
           <TabsTrigger value="resumes">Manage Resumes</TabsTrigger>
           <TabsTrigger value="api">API Settings</TabsTrigger>
         </TabsList>
+        
+        {/* Jobs Tab */}
+        <TabsContent value="jobs" className="mt-6 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center">
+                <span>Posted Jobs</span>
+                <Button size="sm">
+                  <PlusIcon className="h-4 w-4 mr-1" /> New Job
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Job Title</TableHead>
+                      <TableHead>Posted Date</TableHead>
+                      <TableHead>Applicants</TableHead>
+                      <TableHead>Deadline</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {jobs.map(job => (
+                      <TableRow key={job.id}>
+                        <TableCell className="font-medium">{job.title}</TableCell>
+                        <TableCell>{format(new Date(job.createdAt), 'MMM d, yyyy')}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Users className="h-4 w-4 mr-1" />
+                            <span>{getApplicantCountForJob(job.id)}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="flex items-center gap-1 h-8">
+                                <Clock className="h-4 w-4" />
+                                {jobDeadlines[job.id] ? 
+                                  format(jobDeadlines[job.id] as Date, 'MMM d, yyyy') : 
+                                  'Set Deadline'}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={jobDeadlines[job.id]}
+                                onSelect={(date) => handleDeadlineChange(job.id, date)}
+                                initialFocus
+                                disabled={(date) => 
+                                  date < new Date() || 
+                                  date > new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+                                }
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => viewJobDetails(job)} 
+                            className="flex items-center gap-1"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {jobs.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-10">
+                          No jobs posted yet
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          {selectedJob && (
+            <JobDetailsDialog
+              isOpen={showJobDetails}
+              onClose={() => setShowJobDetails(false)}
+              job={selectedJob}
+              applicants={getApplicantsForJob(selectedJob.id)}
+            />
+          )}
+        </TabsContent>
         
         <TabsContent value="settings" className="space-y-6 mt-6">
           <Card>
