@@ -21,6 +21,15 @@ export interface JobRequirement {
   description: string;
   requiredSkills: Skill[];
   createdAt: string;
+  salary?: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  employmentType?: 'full-time' | 'part-time' | 'contract' | 'internship';
+  locationType?: 'remote' | 'on-site' | 'hybrid';
+  experienceLevel?: 'entry' | 'mid' | 'senior' | 'lead';
+  location?: string;
 }
 
 export type UserRole = 'admin' | 'user';
@@ -30,4 +39,14 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+}
+
+export interface JobFilters {
+  salary?: {
+    min: number;
+    max: number;
+  };
+  employmentType?: string[];
+  locationType?: string[];
+  experienceLevel?: string[];
 }

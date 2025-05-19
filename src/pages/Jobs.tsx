@@ -9,11 +9,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import JobRequirementCard from '@/components/JobRequirementCard';
 import SkillSelector from '@/components/SkillSelector';
-import { fetchJobRequirements, createJobRequirement, getSkillCategories, mockSkills } from '@/services/mockData';
-import { JobRequirement, Skill } from '@/types';
+import JobFilters from '@/components/JobFilters';
+import { fetchJobRequirements, createJobRequirement, getSkillCategories, mockSkills, filterJobs } from '@/services/mockData';
+import { JobRequirement, Skill, JobFilters as JobFiltersType } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 const Jobs: React.FC = () => {
   const [jobs, setJobs] = useState<JobRequirement[]>([]);
+  const [filteredJobs, setFilteredJobs] = useState<JobRequirement[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showNewJobDialog, setShowNewJobDialog] = useState<boolean>(false);
   const [jobTitle, setJobTitle] = useState<string>('');
@@ -21,7 +24,11 @@ const Jobs: React.FC = () => {
   const [selectedSkills, setSelectedSkills] = useState<Skill[]>([]);
   const [saving, setSaving] = useState<boolean>(false);
   const [skillCategories, setSkillCategories] = useState<string[]>([]);
+  const [filters, setFilters] = useState<JobFiltersType>({});
   const { toast } = useToast();
+  const { user } = useAuth();
+  
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     const loadJobs = async () => {
@@ -29,6 +36,8 @@ const Jobs: React.FC = () => {
       try {
         const jobsData = await fetchJobRequirements();
         setJobs(jobsData);
+        setFilteredJobs(jobsData);
+        
         // Get unique skill categories
         const categories = getSkillCategories();
         setSkillCategories(categories);
@@ -65,7 +74,9 @@ const Jobs: React.FC = () => {
         requiredSkills: selectedSkills,
       });
       
-      setJobs([...jobs, newJob]);
+      const updatedJobs = [...jobs, newJob];
+      setJobs(updatedJobs);
+      setFilteredJobs(updatedJobs);
       setShowNewJobDialog(false);
       resetForm();
       
@@ -95,9 +106,21 @@ const Jobs: React.FC = () => {
     resetForm();
     setShowNewJobDialog(true);
   };
+  
+  const handleFiltersChange = (newFilters: JobFiltersType) => {
+    setFilters(newFilters);
+    
+    if (Object.keys(newFilters).length === 0) {
+      setFilteredJobs(jobs); // Reset to all jobs
+    } else {
+      const filtered = filterJobs(jobs, newFilters);
+      setFilteredJobs(filtered);
+    }
+  };
 
-  return (
-    <div className="space-y-8">
+  // Admin view for creating and managing jobs
+  const renderAdminView = () => (
+    <>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">Job Requirements</h1>
@@ -117,7 +140,7 @@ const Jobs: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {jobs.map((job) => (
-            <JobRequirementCard key={job.id} job={job} />
+            <JobRequirementCard key={job.id} job={job} isAdmin={true} />
           ))}
           
           {jobs.length === 0 && (
@@ -186,6 +209,59 @@ const Jobs: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+
+  // User view for browsing and filtering jobs
+  const renderUserView = () => (
+    <>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Browse Jobs</h1>
+        <p className="text-muted-foreground">
+          Find your next career opportunity
+        </p>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
+          <div className="lg:col-span-1">
+            <JobFilters onFiltersChange={handleFiltersChange} />
+          </div>
+          
+          <div className="lg:col-span-3">
+            {filteredJobs.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredJobs.map((job) => (
+                  <JobRequirementCard key={job.id} job={job} />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-lg">No jobs match your current filters</p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleFiltersChange({})}
+                    className="mt-4"
+                  >
+                    Reset Filters
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <div className="space-y-8">
+      {isAdmin ? renderAdminView() : renderUserView()}
     </div>
   );
 };
