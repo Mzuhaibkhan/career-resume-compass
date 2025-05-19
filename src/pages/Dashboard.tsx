@@ -17,6 +17,9 @@ import {
 } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, MapPin, Briefcase } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import type { User } from '@/types';
+
 
 const Dashboard = () => {
   const [jobs, setJobs] = useState<JobRequirement[]>([]);
@@ -24,7 +27,7 @@ const Dashboard = () => {
   const [userApplications, setUserApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const { user } = useAuth();
+  const { user } = useAuth() as unknown as { user: User | null };
 
   useEffect(() => {
     const loadData = async () => {
@@ -126,6 +129,8 @@ const Dashboard = () => {
   };
   
   return (
+    <div>
+      <ThemeToggle/>
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
@@ -263,6 +268,7 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       )}
+    </div>
     </div>
   );
 };
